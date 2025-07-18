@@ -11,25 +11,13 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
+import ParticipantDetail from "./pages/ParticipantDetail";
+import RequireAuth from "@/components/routing/RequireAuth";
+
 
 const queryClient = new QueryClient();
 
 // Component to handle QR code redirects
-const QRRedirect = () => {
-  const { user, loading } = useAuth();
-  const { id } = useParams();
-  
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // Redirect to dashboard with participant ID as search parameter
-  return <Navigate to={`/dashboard?participantId=${id}`} replace />;
-};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -42,9 +30,33 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/participant/:id" element={<QRRedirect />} />
+            <Route
+  path="/dashboard"
+  element={
+    <RequireAuth>
+      <Dashboard />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/participant/:id"
+  element={
+    <RequireAuth>
+      <ParticipantDetail />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/admin"
+  element={
+    <RequireAuth>
+      <Admin />
+    </RequireAuth>
+  }
+/>
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

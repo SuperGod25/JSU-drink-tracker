@@ -52,8 +52,14 @@ export default function Dashboard() {
     cazat: false,
   });
 
-  // Redirect if not authenticated
-  if (!loading && (!user || !userRole)) {
+  
+  // 🛡️ AUTH GUARD – WAIT for auth to resolve
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
+  }
+
+  // 🔐 REDIRECT to login if user not authenticated
+  if (!user || !userRole) {
     return <Navigate to="/login" replace />;
   }
 
@@ -389,9 +395,10 @@ export default function Dashboard() {
                       </DialogHeader>
                        <div className="flex justify-center p-4">
                         <QRCode 
-                          value={`${window.location.origin}/dashboard?search=${encodeURIComponent(participant.nume)}`}
-                          size={200}
-                        />
+  value={`${window.location.origin}/participant/${participant.id}`}
+  size={200}
+/>
+
                       </div>
                     </DialogContent>
                   </Dialog>

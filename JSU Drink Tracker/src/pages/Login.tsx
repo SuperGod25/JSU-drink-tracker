@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,16 +12,26 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const { signIn, user, userRole } = useAuth();
 
-  // Redirect if already logged in
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // Get the original destination
+  const from = location.state?.from?.pathname || '/dashboard';
+
   if (user && userRole) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={from} replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    await signIn(username, password);
+
+    const { error } = await signIn(username, password);
     setLoading(false);
+
+    if (!error) {
+      navigate(from, { replace: true });
+    }
   };
 
   return (

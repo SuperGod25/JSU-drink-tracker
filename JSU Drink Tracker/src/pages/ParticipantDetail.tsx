@@ -39,11 +39,35 @@ export default function ParticipantDetail() {
   const { id } = useParams<{ id: string }>();
   const { user, userRole, loading } = useAuth();
   const { toast } = useToast();
+
+  // 👇 FIXED: Wait for loading to finish before doing anything else
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
+  }
+
+  // 👇 FIXED: If not authenticated, redirect safely
+  if (!user || !userRole) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // ⏩ Continue with the rest of your logic after this point
   const [participant, setParticipant] = useState<Participant | null>(null);
   const [editedParticipant, setEditedParticipant] = useState<Participant | null>(null);
   const [activeParty, setActiveParty] = useState<Party | null>(null);
   const [participantDrinks, setParticipantDrinks] = useState<ParticipantDrinks | null>(null);
   const [saving, setSaving] = useState(false);
+
+
+// Show spinner while checking auth status
+
+if (loading) {
+  return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
+}
+
+// If not logged in, redirect to login
+if (!user || !userRole) {
+  return <Navigate to="/login" replace />;
+}
 
   useEffect(() => {
     if (id && user) {
@@ -60,9 +84,7 @@ export default function ParticipantDetail() {
   }, [activeParty, participant]);
 
   // Redirect if not authenticated
-  if (!loading && (!user || !userRole)) {
-    return <Navigate to="/login" replace />;
-  }
+  
 
   const fetchParticipant = async () => {
     if (!id) return;
