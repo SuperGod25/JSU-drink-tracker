@@ -5,7 +5,7 @@ services:
     branch: main
     buildCommand: .render/build.sh
     staticPublishPath: dist
-    rootDir: JSU Drink Tracker
+    rootDir: JSU-Drink-Tracker
     buildFilter:
       paths:
-        - JSU Drink Tracker/**
+        - JSU-Drink-Tracker/**
