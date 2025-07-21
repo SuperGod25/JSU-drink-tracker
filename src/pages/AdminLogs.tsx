@@ -71,10 +71,9 @@ export default function AdminLogs() {
           onChange={(e) => setFilter(e.target.value)}
         >
           <option value="">All Actions</option>
-          <option value="added_drink">Added Drink</option>
-          <option value="removed_drink">Removed Drink</option>
+          <option value="drink_added">Added Drink</option>
+          <option value="drink_removed">Removed Drink</option>
           <option value="created_party">Created Party</option>
-          <option value="activated_party">Activated Party</option>
         </select>
 
         <input
