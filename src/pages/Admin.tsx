@@ -14,6 +14,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import QRCode from 'react-qr-code';
+import { logAction } from '@/lib/logger';
+
+
 
 interface Participant {
   id: string;
@@ -155,34 +158,47 @@ export default function Admin() {
   };
 
   const addParty = async () => {
-    if (!newParty.name || !newParty.date) {
-      toast({
-        title: "Eroare",
-        description: "Completează toate câmpurile",
-        variant: "destructive"
-      });
-      return;
+  if (!newParty.name || !newParty.date) {
+    toast({
+      title: "Eroare",
+      description: "Completează toate câmpurile",
+      variant: "destructive"
+    });
+    return;
+  }
+
+  const { error } = await supabase
+    .from('parties')
+    .insert([newParty]);
+
+  if (error) {
+    toast({
+      title: "Eroare",
+      description: "Petrecerea nu a putut fi adăugată",
+      variant: "destructive"
+    });
+  } else {
+    toast({
+      title: "Succes",
+      description: "Petrecere adăugată cu succes"
+    });
+
+    if (user) {
+      await logAction({
+  userId: user.id,
+  username: user.email,
+  action: 'created_party',
+  target: newParty.name,
+  message: `${user.email} a creat petrecerea ${newParty.name}`,
+});
+console.log('Logged action successfully!');
+
     }
 
-    const { error } = await supabase
-      .from('parties')
-      .insert([newParty]);
-
-    if (error) {
-      toast({
-        title: "Eroare",
-        description: "Petrecerea nu a putut fi adăugată",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Succes",
-        description: "Petrecere adăugată cu succes"
-      });
-      setNewParty({ name: '', date: '' });
-      fetchParties();
-    }
-  };
+    setNewParty({ name: '', date: '' });
+    fetchParties();
+  }
+};
 
   const setActivePartyById = async (partyId: string) => {
     // First, deactivate all parties
@@ -217,25 +233,38 @@ export default function Admin() {
   };
 
   const updateParty = async (partyId: string, updatedData: { name: string; date: string }) => {
-    const { error } = await supabase
-      .from('parties')
-      .update(updatedData)
-      .eq('id', partyId);
+  const { error } = await supabase
+    .from('parties')
+    .update(updatedData)
+    .eq('id', partyId);
 
-    if (error) {
-      toast({
-        title: "Eroare",
-        description: "Petrecerea nu a putut fi actualizată",
-        variant: "destructive"
+  if (error) {
+    toast({
+      title: "Eroare",
+      description: "Petrecerea nu a putut fi actualizată",
+      variant: "destructive"
+    });
+  } else {
+    toast({
+      title: "Succes",
+      description: "Petrecere actualizată cu succes"
+    });
+
+    // ✅ Logging
+    if (user) {
+      await logAction({
+        userId: user.id,
+        username: user.email,
+        action: 'updated_party',
+        target: updatedData.name,
+        message: `${user.email} a actualizat petrecerea ${updatedData.name}`
       });
-    } else {
-      toast({
-        title: "Succes",
-        description: "Petrecere actualizată cu succes"
-      });
-      fetchParties();
     }
-  };
+
+    fetchParties();
+  }
+};
+
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
@@ -244,12 +273,18 @@ export default function Admin() {
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">Panou Administrator</h1>
-          <Button variant="outline" onClick={() => navigate('/dashboard')}>
-            Înapoi la Dashboard
-          </Button>
-        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+  <h1 className="text-3xl font-bold">Panou Administrator</h1>
+  <div className="flex gap-2">
+    <Button variant="secondary" onClick={() => navigate('/admin/logs')}>
+      📝 Vizualizează Loguri
+    </Button>
+    <Button variant="outline" onClick={() => navigate('/dashboard')}>
+      Înapoi la Dashboard
+    </Button>
+  </div>
+</div>
+
 
         <Tabs defaultValue="participants" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
@@ -554,6 +589,7 @@ function EditablePartyCard({ party, onUpdate, onActivate, isActive }: {
         title: "Succes",
         description: "Petrecere actualizată cu succes"
       });
+      
       setIsEditing(false);
       onUpdate();
     }

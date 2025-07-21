@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import QRCode from 'react-qr-code';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { logAction } from '@/lib/logger';
 
 interface Participant {
   id: string;
@@ -140,26 +141,38 @@ export default function Dashboard() {
   };
 
   const updateDrinks = async (participantId: string, increment: boolean) => {
-    const participant = participants.find(p => p.id === participantId);
-    if (!participant) return;
+  const participant = participants.find(p => p.id === participantId);
+  if (!participant || !activeParty) return;
 
-    const newCount = increment 
-      ? participant.numar_bauturi + 1 
-      : Math.max(0, participant.numar_bauturi - 1);
+  const newCount = increment 
+    ? participant.numar_bauturi + 1 
+    : Math.max(0, participant.numar_bauturi - 1);
 
-    const { error } = await supabase
-      .from('participants')
-      .update({ numar_bauturi: newCount })
-      .eq('id', participantId);
+  const { error } = await supabase
+    .from('participants')
+    .update({ numar_bauturi: newCount })
+    .eq('id', participantId);
 
-    if (error) {
-      toast({
-        title: "Eroare",
-        description: "Actualizarea numărului de băuturi a eșuat",
-        variant: "destructive",
+  if (error) {
+    toast({
+      title: "Eroare",
+      description: "Actualizarea numărului de băuturi a eșuat",
+      variant: "destructive",
+    });
+  } else {
+    // ✅ Logging Logic
+    if (user) {
+      await logAction({
+        userId: user.id,
+        username: user.email,
+        action: increment ? 'drink_added' : 'drink_removed',
+        target: participant.nume,
+        message: `${user.email} a ${increment ? 'adăugat o băutură' : 'scăzut o băutură'} pentru ${participant.nume} la petrecerea ${activeParty.name}`
       });
     }
-  };
+  }
+};
+
 
   const addParticipant = async () => {
     if (!newParticipant.nume || !newParticipant.facultate || !newParticipant.numar_camera) {

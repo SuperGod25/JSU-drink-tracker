@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import ParticipantDetail from "./pages/ParticipantDetail";
 import RequireAuth from "@/components/routing/RequireAuth";
+import AdminLogs from "./pages/AdminLogs";
 
 
 const queryClient = new QueryClient();
@@ -53,6 +54,14 @@ const App = () => (
   element={
     <RequireAuth>
       <Admin />
+    </RequireAuth>
+  }
+/>
+<Route
+  path="/admin/logs"
+  element={
+    <RequireAuth>
+      <AdminLogs />
     </RequireAuth>
   }
 />
