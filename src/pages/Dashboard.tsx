@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [filteredParticipants, setFilteredParticipants] = useState<Participant[]>([]);
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const participantId = searchParams.get('participantId');
   const [facultateFilter, setFacultateFilter] = useState('');
   const [majorFilter, setMajorFilter] = useState<boolean | null>(null);
@@ -53,16 +55,15 @@ export default function Dashboard() {
     cazat: false,
   });
 
-  
-  // 🛡️ AUTH GUARD – WAIT for auth to resolve
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Se încarcă...</div>;
-  }
-
-  // 🔐 REDIRECT to login if user not authenticated
-  if (!user || !userRole) {
-    return <Navigate to="/login" replace />;
-  }
+  useEffect(() => {
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    };
+  }, [searchTerm]);
 
   const fetchParticipants = async () => {
     const { data, error } = await supabase
@@ -72,9 +73,9 @@ export default function Dashboard() {
 
     if (error) {
       toast({
-        title: "Eroare",
-        description: "Încărcarea participanților a eșuat",
-        variant: "destructive",
+        title: 'Eroare',
+        description: 'Încărcarea participanților a eșuat',
+        variant: 'destructive',
       });
     } else {
       setParticipants(data || []);
@@ -101,7 +102,7 @@ export default function Dashboard() {
         {
           event: '*',
           schema: 'public',
-          table: 'participants'
+          table: 'participants',
         },
         () => {
           fetchParticipants();
@@ -114,72 +115,45 @@ export default function Dashboard() {
     };
   };
 
-  const filterParticipants = () => {
-    let filtered = participants;
-
-    if (searchTerm) {
-      filtered = filtered.filter(p => 
-        p.nume.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.facultate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.numar_camera.includes(searchTerm)
-      );
-    }
-
-    if (facultateFilter) {
-      filtered = filtered.filter(p => p.facultate === facultateFilter);
-    }
-
-    if (majorFilter !== null) {
-      filtered = filtered.filter(p => p.major === majorFilter);
-    }
-
-    if (cazatFilter !== null) {
-      filtered = filtered.filter(p => p.cazat === cazatFilter);
-    }
-
-    setFilteredParticipants(filtered);
-  };
-
   const updateDrinks = async (participantId: string, increment: boolean) => {
-  const participant = participants.find(p => p.id === participantId);
-  if (!participant || !activeParty) return;
+    const participant = participants.find((p) => p.id === participantId);
+    if (!participant || !activeParty) return;
 
-  const newCount = increment 
-    ? participant.numar_bauturi + 1 
-    : Math.max(0, participant.numar_bauturi - 1);
+    const newCount = increment
+      ? participant.numar_bauturi + 1
+      : Math.max(0, participant.numar_bauturi - 1);
 
-  const { error } = await supabase
-    .from('participants')
-    .update({ numar_bauturi: newCount })
-    .eq('id', participantId);
+    const { error } = await supabase
+      .from('participants')
+      .update({ numar_bauturi: newCount })
+      .eq('id', participantId);
 
-  if (error) {
-    toast({
-      title: "Eroare",
-      description: "Actualizarea numărului de băuturi a eșuat",
-      variant: "destructive",
-    });
-  } else {
-    // ✅ Logging Logic
-    if (user) {
-      await logAction({
-        userId: user.id,
-        username: user.email,
-        action: increment ? 'drink_added' : 'drink_removed',
-        target: participant.nume,
-        message: `${user.email} a ${increment ? 'adăugat o băutură' : 'scăzut o băutură'} pentru ${participant.nume} la petrecerea ${activeParty.name}`
+    if (error) {
+      toast({
+        title: 'Eroare',
+        description: 'Actualizarea numărului de băuturi a eșuat',
+        variant: 'destructive',
       });
+    } else {
+      if (user) {
+        await logAction({
+          userId: user.id,
+          username: user.email,
+          action: increment ? 'drink_added' : 'drink_removed',
+          target: participant.nume,
+          message: `${user.email} a ${increment ? 'adăugat o băutură' : 'scăzut o băutură'} pentru ${participant.nume} la petrecerea ${activeParty.name}`,
+        });
+      }
+      fetchParticipants();
     }
-  }
-};
-
+  };
 
   const addParticipant = async () => {
     if (!newParticipant.nume || !newParticipant.facultate || !newParticipant.numar_camera) {
       toast({
-        title: "Eroare",
-        description: "Vă rugăm să completați toate câmpurile obligatorii",
-        variant: "destructive",
+        title: 'Eroare',
+        description: 'Vă rugăm să completați toate câmpurile obligatorii',
+        variant: 'destructive',
       });
       return;
     }
@@ -190,14 +164,14 @@ export default function Dashboard() {
 
     if (error) {
       toast({
-        title: "Eroare",
-        description: "Adăugarea participantului a eșuat",
-        variant: "destructive",
+        title: 'Eroare',
+        description: 'Adăugarea participantului a eșuat',
+        variant: 'destructive',
       });
     } else {
       toast({
-        title: "Succes",
-        description: "Participant adăugat cu succes",
+        title: 'Succes',
+        description: 'Participant adăugat cu succes',
       });
       setNewParticipant({
         nume: '',
@@ -207,7 +181,36 @@ export default function Dashboard() {
         cazat: false,
       });
       setShowAddForm(false);
+      fetchParticipants();
     }
+  };
+
+  const filterParticipants = () => {
+    let filtered = participants;
+    const lowerTerm = debouncedSearchTerm.toLowerCase();
+
+    if (debouncedSearchTerm) {
+      filtered = filtered.filter(
+        (p) =>
+          (p.nume?.toLowerCase() ?? '').includes(lowerTerm) ||
+          (p.facultate?.toLowerCase() ?? '').includes(lowerTerm) ||
+          (p.numar_camera ?? '').includes(lowerTerm)
+      );
+    }
+
+    if (facultateFilter) {
+      filtered = filtered.filter((p) => p.facultate === facultateFilter);
+    }
+
+    if (majorFilter !== null) {
+      filtered = filtered.filter((p) => p.major === majorFilter);
+    }
+
+    if (cazatFilter !== null) {
+      filtered = filtered.filter((p) => p.cazat === cazatFilter);
+    }
+
+    setFilteredParticipants(filtered);
   };
 
   useEffect(() => {
@@ -215,8 +218,7 @@ export default function Dashboard() {
       fetchParticipants();
       fetchActiveParty();
       subscribeToParticipants();
-      
-      // Subscribe to party changes
+
       const partyChannel = supabase
         .channel('party-changes')
         .on(
@@ -224,7 +226,7 @@ export default function Dashboard() {
           {
             event: '*',
             schema: 'public',
-            table: 'parties'
+            table: 'parties',
           },
           () => {
             fetchActiveParty();
@@ -238,13 +240,15 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // Handle participant ID from QR code redirect
+  useEffect(() => {
+    filterParticipants();
+  }, [participants, debouncedSearchTerm, facultateFilter, majorFilter, cazatFilter]);
+
   useEffect(() => {
     if (participantId && participants.length > 0) {
-      const participant = participants.find(p => p.id === participantId);
+      const participant = participants.find((p) => p.id === participantId);
       if (participant) {
         setSearchTerm(participant.nume);
-        // Remove participantId from URL after setting search term
         const newSearchParams = new URLSearchParams(searchParams);
         newSearchParams.delete('participantId');
         setSearchParams(newSearchParams);
