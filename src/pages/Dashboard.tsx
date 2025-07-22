@@ -400,45 +400,19 @@ export default function Dashboard() {
                     <CardTitle className="text-lg">{participant.nume}</CardTitle>
                     <p className="text-sm text-muted-foreground">{participant.facultate}</p>
                   </div>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <QrCode className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>{participant.nume} - QR Code</DialogTitle>
-                      </DialogHeader>
-                       <div className="flex justify-center p-4">
-                        <QRCode 
-  value={`${window.location.origin}/participant/${participant.id}`}
-  size={200}
-/>
-
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                  
                 </div>
               </CardHeader>
               <CardContent>
                   <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Cameră:</span>
-                    <span className="font-medium">{participant.numar_camera}</span>
-                  </div>
+                  
                   <div className="flex justify-between">
                     <span className="text-sm">Major:</span>
                     <Badge variant={participant.major ? "default" : "secondary"}>
                       {participant.major ? "Da" : "Nu"}
                     </Badge>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Cazat:</span>
-                    <Badge variant={participant.cazat ? "default" : "secondary"}>
-                      {participant.cazat ? "Da" : "Nu"}
-                    </Badge>
-                  </div>
+                
                   <div className="flex justify-between items-center">
                     <span className="text-sm">Băuturi {activeParty ? activeParty.name : 'Party Activ'}:</span>
                     <div className="flex items-center gap-2">
